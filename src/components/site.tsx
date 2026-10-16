@@ -65,7 +65,7 @@ export function ProductCard({ product }: { product: Product }) {
         <span className="shrink-0 text-sm">{formatPrice(product.price)}</span>
       </div>
       <button
-        onClick={() => { add({ id: product.id, color: product.colors[0].name, size: product.sizes[1] ?? product.sizes[0] }); toast.success(`${product.name} added to your bag`); }}
+        onClick={() => { add({ id: product.id, color: product.colors[0]?.name ?? "", size: product.sizes[1] ?? product.sizes[0] ?? "" }); toast.success(`${product.name} added to your bag`); }}
         className="mt-3 w-full rounded-full border border-primary/30 py-2.5 text-xs uppercase tracking-[0.18em] text-primary transition hover:bg-primary hover:text-primary-foreground">
         Quick Add
       </button>

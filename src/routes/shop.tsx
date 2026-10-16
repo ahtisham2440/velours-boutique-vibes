@@ -6,7 +6,7 @@ const cats: (Category | "All")[] = ["All", "Bras", "Panties", "Sets", "Night Wea
 
 export const Route = createFileRoute("/shop")({
   validateSearch: (s: Record<string, unknown>): { category?: Category } => {
-    const c = s.category as Category;
+    const c = s["category"] as Category;
     return cats.includes(c) && c !== ("All" as Category) ? { category: c } : {};
   },
   head: () => ({
