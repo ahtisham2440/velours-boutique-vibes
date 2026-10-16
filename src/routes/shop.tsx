@@ -1,30 +1,37 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { ProductCard } from "@/components/site";
-import { products, type Category } from "@/lib/products";
+import { fetchProducts } from "@/lib/shopify";
 
-const cats: (Category | "All")[] = ["All", "Bras", "Panties", "Sets", "Night Wear"];
+const productsQuery = queryOptions({
+  queryKey: ["shopify-products", "all"],
+  queryFn: () => fetchProducts(100),
+});
 
 export const Route = createFileRoute("/shop")({
-  validateSearch: (s: Record<string, unknown>): { category?: Category } => {
-    const c = s["category"] as Category;
-    return cats.includes(c) && c !== ("All" as Category) ? { category: c } : {};
-  },
+  validateSearch: (s: Record<string, unknown>): { category?: string } =>
+    s["category"] ? { category: String(s["category"]) } : {},
   head: () => ({
     meta: [
-      { title: "Shop Lingerie & Night Wear — Velours" },
-      { name: "description", content: "Browse soft bras, briefs, sets and night wear. Discreet delivery and easy returns." },
+      { title: "Shop — Velours" },
+      { name: "description", content: "Browse our full collection. Discreet delivery and easy returns." },
       { property: "og:title", content: "Shop — Velours" },
-      { property: "og:description", content: "Soft, elegant lingerie and night wear." },
+      { property: "og:description", content: "Soft, elegant pieces from our collection." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(productsQuery),
   component: Shop,
 });
 
 function Shop() {
   const { category } = Route.useSearch();
-  const list = category ? products.filter((p) => p.category === category) : products;
+  const { data: products } = useSuspenseQuery(productsQuery);
+
+  const cats = ["All", ...Array.from(new Set(products.map((p) => p.productType).filter(Boolean)))];
+  const list = category ? products.filter((p) => p.productType === category) : products;
+
   return (
     <section className="mx-auto max-w-7xl px-5 py-14">
       <p className="eyebrow text-center">The collection</p>
@@ -40,9 +47,13 @@ function Shop() {
           );
         })}
       </div>
-      <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 lg:grid-cols-3">
-        {list.map((p) => <ProductCard key={p.id} product={p} />)}
-      </div>
+      {list.length === 0 ? (
+        <p className="py-24 text-center text-muted-foreground">No products found</p>
+      ) : (
+        <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 lg:grid-cols-3">
+          {list.map((p) => <ProductCard key={p.id} product={p} />)}
+        </div>
+      )}
     </section>
   );
 }

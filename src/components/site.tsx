@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Menu, ShoppingBag, X, MessageCircle, Instagram, Facebook, Mail, Phone, Lock, Package, Star } from "lucide-react";
+import { Menu, ShoppingBag, X, MessageCircle, Instagram, Facebook, Mail, Phone, Lock, Package } from "lucide-react";
 import { toast } from "sonner";
-import { useCart } from "@/lib/cart";
-import { formatPrice, WHATSAPP_URL, type Product } from "@/lib/products";
+import { useCartStore } from "@/lib/cart";
+import { formatMoney, WHATSAPP_URL, type ShopifyProduct } from "@/lib/shopify";
 
 const nav = [
   { to: "/shop", label: "Shop" },
@@ -12,12 +12,13 @@ const nav = [
 ] as const;
 
 export function Header() {
-  const { count } = useCart();
+  const items = useCartStore((s) => s.items);
+  const count = items.reduce((sum, item) => sum + item.quantity, 0);
   const [open, setOpen] = useState(false);
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="bg-secondary py-2 text-center text-[0.7rem] tracking-[0.2em] uppercase text-secondary-foreground">
-        Free delivery over Rs. 4,000 · Discreet packaging, always
+        Discreet packaging, always
       </div>
       <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-4">
         <button className="md:hidden" aria-label="Menu" onClick={() => setOpen(!open)}>
@@ -47,27 +48,47 @@ export function Header() {
   );
 }
 
-export function ProductCard({ product }: { product: Product }) {
-  const { add } = useCart();
+export function ProductCard({ product }: { product: ShopifyProduct }) {
+  const addItem = useCartStore((s) => s.addItem);
+  const isLoading = useCartStore((s) => s.isLoading);
+  const variant =
+    product.variants.edges.find((v) => v.node.availableForSale)?.node ?? product.variants.edges[0]?.node ?? null;
+  const image = product.images.edges[0]?.node;
+  const soldOut = !variant || !variant.availableForSale;
+
+  const handleAdd = async () => {
+    if (!variant) return;
+    await addItem({
+      product,
+      variantId: variant.id,
+      variantTitle: variant.title,
+      price: variant.price,
+      quantity: 1,
+      selectedOptions: variant.selectedOptions,
+    });
+    toast.success(`${product.title} added to your bag`);
+  };
+
   return (
     <div className="group">
-      <Link to="/product/$id" params={{ id: product.id }} className="block overflow-hidden rounded-xl bg-muted">
-        <img src={product.images[0]} alt={product.name} loading="lazy" width={800} height={1008}
-          className="aspect-[4/5] w-full object-cover transition duration-[1200ms] ease-out group-hover:scale-105" />
+      <Link to="/product/$id" params={{ id: product.handle }} className="block overflow-hidden rounded-xl bg-muted">
+        {image && (
+          <img src={image.url} alt={image.altText ?? product.title} loading="lazy" width={800} height={1008}
+            className="aspect-[4/5] w-full object-cover transition duration-[1200ms] ease-out group-hover:scale-105" />
+        )}
       </Link>
       <div className="mt-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <Link to="/product/$id" params={{ id: product.id }} className="font-serif text-lg leading-tight hover:text-rose">{product.name}</Link>
-          <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-            <Star className="h-3 w-3 fill-gold text-gold" /> {product.rating} ({product.reviews})
-          </div>
+          <Link to="/product/$id" params={{ id: product.handle }} className="font-serif text-lg leading-tight hover:text-rose">{product.title}</Link>
+          {product.productType && <p className="mt-1 text-xs text-muted-foreground">{product.productType}</p>}
         </div>
-        <span className="shrink-0 text-sm">{formatPrice(product.price)}</span>
+        <span className="shrink-0 text-sm">{formatMoney(product.priceRange.minVariantPrice)}</span>
       </div>
       <button
-        onClick={() => { add({ id: product.id, color: product.colors[0]?.name ?? "", size: product.sizes[1] ?? product.sizes[0] ?? "" }); toast.success(`${product.name} added to your bag`); }}
-        className="mt-3 w-full rounded-full border border-primary/30 py-2.5 text-xs uppercase tracking-[0.18em] text-primary transition hover:bg-primary hover:text-primary-foreground">
-        Quick Add
+        onClick={handleAdd}
+        disabled={soldOut || isLoading}
+        className="mt-3 w-full rounded-full border border-primary/30 py-2.5 text-xs uppercase tracking-[0.18em] text-primary transition hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-primary">
+        {soldOut ? "Sold out" : "Quick Add"}
       </button>
     </div>
   );
@@ -121,7 +142,7 @@ export function Footer() {
           </div>
           <p className="eyebrow mb-3 mt-6">We accept</p>
           <div className="flex flex-wrap gap-2">
-            {["VISA", "Mastercard", "JazzCash", "EasyPaisa", "COD"].map((p) => (
+            {["VISA", "Mastercard", "COD"].map((p) => (
               <span key={p} className="rounded border border-border bg-card px-2 py-1 text-[0.65rem] font-semibold tracking-wide">{p}</span>
             ))}
           </div>
