@@ -57,7 +57,7 @@ function Checkout() {
           <legend className="eyebrow mb-3">2 · Payment</legend>
           {[["cod", "Cash on Delivery", "Pay when your parcel arrives"], ["card", "Card / Wallet", "Secure payment, billed under a neutral name"]].map(([v, t, d]) => (
             <label key={v} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${pay === v ? "border-primary bg-blush/40" : "border-border"}`}>
-              <input type="radio" name="pay" value={v} checked={pay === v} onChange={() => setPay(v)} className="mt-1 accent-[var(--primary)]" />
+              <input type="radio" name="pay" value={v} checked={pay === v} onChange={() => setPay(v ?? "cod")} className="mt-1 accent-[var(--primary)]" />
               <span><span className="block font-medium">{t}</span><span className="text-sm text-muted-foreground">{d}</span></span>
             </label>
           ))}

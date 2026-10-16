@@ -36,7 +36,7 @@ function ProductPage() {
   const { product: p } = Route.useLoaderData();
   const { add } = useCart();
   const [img, setImg] = useState(0);
-  const [color, setColor] = useState(p.colors[0].name);
+  const [color, setColor] = useState(p.colors[0]?.name ?? "");
   const [size, setSize] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
   const related = products.filter((x) => x.id !== p.id).slice(0, 4);
